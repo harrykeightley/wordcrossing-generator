@@ -11,6 +11,8 @@ use crate::{
     position::{Direction, Position},
 };
 
+/// An Entity in Wordcrossing which occupies a square on the grid. In this generator,
+/// only `Entity::Wall` is used.
 #[derive(PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
@@ -18,15 +20,6 @@ pub enum Entity {
     Wall,
     Letter(char),
     Nothing,
-}
-
-impl Entity {
-    pub fn can_collide(&self) -> bool {
-        match self {
-            Entity::Wall => true,
-            _ => false,
-        }
-    }
 }
 
 fn serialize_entities<S>(entities: &HashMap<Position, Entity>, s: S) -> Result<S::Ok, S::Error>
@@ -40,6 +33,7 @@ where
     e.end()
 }
 
+/// A representation of the grid in Wordcrossing.
 #[derive(PartialEq, Eq, Clone, Serialize)]
 pub struct Grid {
     pub rows: usize,
@@ -49,6 +43,7 @@ pub struct Grid {
 }
 
 impl Grid {
+    /// Create a new grid, without any entities.
     pub fn new(rows: usize, cols: usize) -> Self {
         Self {
             rows,
@@ -57,6 +52,8 @@ impl Grid {
         }
     }
 
+    /// Returns all positions contained within this grid, regardless of whether
+    /// or not they have an entity on them.
     pub fn all_positions(&self) -> Vec<Position> {
         let mut result: Vec<Position> = Vec::new();
         for row in 0..self.rows {
@@ -67,16 +64,24 @@ impl Grid {
         result
     }
 
+    /// Add a series of (position, entity) pairs to the grid.
     pub fn add_entities(&mut self, entities: impl Iterator<Item = (Position, Entity)>) {
         entities.for_each(|(pos, entity)| {
             self.entities.insert(pos, entity);
         });
     }
 
+    /// Spawns the given entity at all the supplied positions.
     pub fn set_positions(&mut self, positions: Vec<Position>, entity: Entity) {
         self.add_entities(positions.into_iter().map(|p| (p, entity)))
     }
 
+    /// Chooses random locations within the grid to "wall off".
+    ///
+    /// `min_area` in 0..1 is the minimum percentage to wall off.
+    /// `max_area` in 0..1 is the maximum percentage to wall off.
+    ///
+    /// A random amount between min and max areas will be chosen.
     pub fn randomise_walls(&mut self, min_area: f32, max_area: f32) {
         let roll: f32 = rand::random();
         let area = min_area + roll * (max_area - min_area);
@@ -89,6 +94,10 @@ impl Grid {
         self.set_positions(walls_to_be, Entity::Wall);
     }
 
+    /// Returns all positions that can be reached in the free space, from
+    /// the starting position.
+    ///
+    /// Returns an empty set if the supplied position is a wall.
     pub fn explore_section(&self, start: Position) -> HashSet<Position> {
         let mut visited: HashSet<Position> = HashSet::new();
         let mut grey: HashSet<Position> = HashSet::new();
@@ -118,6 +127,7 @@ impl Grid {
         visited
     }
 
+    /// Returns a vector of the connected spaces within the grid.
     pub fn find_connected_sections(&self) -> Vec<HashSet<Position>> {
         let mut result: Vec<HashSet<Position>> = Vec::new();
         let mut seen: HashSet<Position> = HashSet::new();
@@ -141,6 +151,9 @@ impl Grid {
         result
     }
 
+    /// Randomises the walls within this grid, then walls off every section
+    /// except the largest one, to make it clearer to the user where they can
+    /// go.
     pub fn initialise_walls(&mut self) -> HashSet<Position> {
         self.randomise_walls(0.15, 0.5);
         let mut sections = self.find_connected_sections();
@@ -156,6 +169,8 @@ impl Grid {
         sections[0].clone()
     }
 
+    /// Finds the free space within this grid. The free space is the set of
+    /// positions which aren't occupied by walls.
     pub fn free_space(&self) -> HashSet<Position> {
         self.find_connected_sections()
             .iter()
@@ -164,6 +179,8 @@ impl Grid {
             })
     }
 
+    /// Returns all valid neighbours of a position, constrained by the dimensions
+    /// of the grid.
     pub fn valid_neighbours(&self, position: Position) -> Vec<Position> {
         position
             .neighbours()
@@ -172,6 +189,9 @@ impl Grid {
             .collect()
     }
 
+    /// Creates a mapping: Position -> Position -> (turns: usize, direction: Option<Direction>),
+    /// representing how many turns are required from position A to B, and the next direction
+    /// required to head in to get there.
     pub fn generate_turns_map(&self) -> TurnsMap {
         let mut result: TurnsMap = EdgeMap::new();
         let free_space = self.free_space();
@@ -216,6 +236,8 @@ impl Grid {
         result
     }
 
+    /// Creates a distance mapping: Position -> Position -> (distance: usize),
+    /// representing the minimum distance between two points in the grid.
     pub fn generate_distance_map(&self) -> DistanceMap {
         let mut result: DistanceMap = EdgeMap::new();
         let free_space = self.free_space();
@@ -254,6 +276,7 @@ impl Grid {
         result
     }
 
+    /// Helper method for visualising a grid.
     pub fn visualise(&self) {
         let bar = "#".repeat(self.cols);
         for row in 0..self.rows {
@@ -274,6 +297,9 @@ impl Grid {
     }
 }
 
+/// A level is a grid with chosen start and goal positions. If the level is "solved",
+/// then `words` will contain a series of strings that could connect the start and
+/// goal positions. The rules for this `connection` will be described later.
 #[derive(Serialize)]
 pub struct Level {
     pub start: Position,

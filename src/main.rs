@@ -24,6 +24,7 @@ const LEVEL_COUNT: usize = 365;
 const WORDS_PATH: &str = "assets/easy_words.json";
 const OUTPUT_FOLDER: &str = "assets/output";
 
+/// Generates a supplied amount of levels that satisfy the predicate function.
 fn generate_levels(
     word_list: WordList,
     amount: usize,
@@ -45,6 +46,8 @@ fn generate_levels(
     result
 }
 
+/// A filter that returns true if the level's solution has the supplied
+/// minimum average letter count.
 fn has_minimum_avg_letter_count<const SIZE: usize>(level: &Level) -> bool {
     // Avg letter count must be greater than 3
     let letter_count = level.words.iter().fold(0, |count, word| count + word.len());
@@ -52,6 +55,9 @@ fn has_minimum_avg_letter_count<const SIZE: usize>(level: &Level) -> bool {
     return avg_count >= SIZE;
 }
 
+/// Add available letters to this level to make it easier, and give more
+/// potential solutions to the user. This is done by sampling the suppplied
+/// letter frequencies.
 fn increase_letters(level: &mut Level, frequencies: &HashMap<char, usize>) {
     let letter_count = level
         .words
@@ -71,6 +77,7 @@ fn increase_letters(level: &mut Level, frequencies: &HashMap<char, usize>) {
     level.words.push(padded_word);
 }
 
+/// Return the name of the level in YYYY-MM-DD format.
 fn level_name(start_date: &DateTime<Utc>, index: u64) -> String {
     let Some(date) = start_date.checked_add_days(Days::new(index)) else {
         return format!("{}", index);

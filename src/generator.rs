@@ -8,6 +8,7 @@ use crate::{
     solver::{Solution, WordList},
 };
 
+/// A model used to generate levels from information extracted from the grid.
 pub struct LevelGenerator {
     pub grid: Grid,
     pub free_space: HashSet<Position>,
@@ -16,6 +17,7 @@ pub struct LevelGenerator {
 }
 
 impl LevelGenerator {
+    /// Creates a level generator from a grid.
     pub fn from_grid(mut grid: Grid) -> Self {
         let free_space = grid.initialise_walls();
         let turns_map = grid.generate_turns_map();
@@ -29,6 +31,11 @@ impl LevelGenerator {
         }
     }
 
+    /// Attempts to generate a level.
+    ///
+    /// Does this in two main steps:
+    /// - Choose start and goal posiitons
+    /// - Attempt to solve the level, up to `solver_retries` tries.
     pub fn attempt_generate_level(
         &self,
         word_list: &WordList,
