@@ -1,2 +1,10 @@
+**/.DS_Store
+
 /target
 /assets/output
+
+# Report
+/report/*
+!/report/wc.tex
+!/report/wc.pdf
+!/report/images

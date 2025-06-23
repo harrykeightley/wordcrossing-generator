@@ -20,7 +20,7 @@ type DistanceMap = EdgeMap<usize>;
 type TurnsMap = EdgeMap<(usize, Option<Direction>)>;
 
 const START_DATE: &str = "2025-05-03 12:12:12Z";
-const LEVEL_COUNT: usize = 365;
+const LEVEL_COUNT: usize = 10;
 const WORDS_PATH: &str = "assets/easy_words.json";
 const OUTPUT_FOLDER: &str = "assets/output";
 
@@ -102,15 +102,18 @@ fn main() {
 
     levels.iter().for_each(Level::visualise);
 
+    // NOTE: The code below is only relevant for saving levels to disk.
+    // If you just want to visualise them, leave it commented out.
+    //
     // Build their names and save them to disk
-    let start_date = START_DATE.parse::<DateTime<Utc>>().unwrap();
-
-    levels.iter().enumerate().for_each(|(i, level)| {
-        let raw = serde_json::to_string(level).expect("Couldn't convert level");
-        let name = level_name(&start_date, i as u64);
-        let path = format!("{}/{}.json", OUTPUT_FOLDER, name);
-        println!("{}", path);
-
-        fs::write(path, raw).expect("Couldn't write.");
-    });
+    //let start_date = START_DATE.parse::<DateTime<Utc>>().unwrap();
+    //
+    //levels.iter().enumerate().for_each(|(i, level)| {
+    //    let raw = serde_json::to_string(level).expect("Couldn't convert level");
+    //    let name = level_name(&start_date, i as u64);
+    //    let path = format!("{}/{}.json", OUTPUT_FOLDER, name);
+    //    println!("{}", path);
+    //
+    //    fs::write(path, raw).expect("Couldn't write.");
+    //});
 }
